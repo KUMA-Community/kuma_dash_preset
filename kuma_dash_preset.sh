@@ -1,16 +1,22 @@
 #!/bin/bash
-# RU_PRESALE_TEAM_BORIS_O
-# ver. 0.2 (11.11.2024)
+# ver. 0.3 (05.12.2024)
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-M_EXPORT=/opt/kaspersky/kuma/mongodb/bin/mongoexport
-M_IMPORT=/opt/kaspersky/kuma/mongodb/bin/mongoimport
-ACTUAL_TENANT_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.find({"main":true})[0]._id')
-ACTUAL_CLUSTER_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.services.find({"kind": "storage", "status": "green", "tenantID": "'$ACTUAL_TENANT_ID'"})[0].resourceID')
+KUMA_VER=$(/opt/kaspersky/kuma/kuma version | cut -d "." -f1-2)
+ACTUAL_TENANT_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.find({"main":true},{"_id": 1}).map(function(doc){return doc._id;});' | sed "s/'/\"/g" | cut -d '"' -f2)
+
+if [[ $(bc <<< "$KUMA_VER >= 3.2") -eq 1 ]]; then 
+	ACTUAL_CLUSTER_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.services.find({"kind": "storage", "status": "green", "tenantID": "'$ACTUAL_TENANT_ID'"})[0].resourceID')
+else
+	ACTUAL_CLUSTER_ID=$(sqlite3 /opt/kaspersky/kuma/core/00000000-0000-0000-0000-000000000000/raft/sm/db "select resource_id from services where kind='storage' and status='green' and tenant_id='$mainID';")
+
+	mainID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.findOne({"main":true})._id');/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.updateMany({"name": {$in:["[OOTB] KWTS","[OOTB] KSMG","[OOTB] KSC","[OOTB] KATA & EDR","Network Overview"]}}, {$set: {"widgets.$[x].search.clusterID": "'"$ACTUAL_CLUSTER_ID"'"}},{arrayFilters: [{"x.search.clusterID": {$in:["phantomID","","6c964dab-e303-4a2c-bb31-d84866a20599"]}, "x.specialKind": ""}]});'
+fi
+
 usage="\n$(basename "$0") [-h] [-exportDash] [-importDash] [-deleteDash] [-exportPreset] [-importPreset] <ARGUMENTS> -- program for executing script\n
 \n
 where:\n
@@ -25,12 +31,6 @@ where:\n
 
 if [[ $# -eq 0 ]]; then
 	echo -e "${RED}No arguments supplied${NC}"
-	echo -e $usage
-	exit 1
-fi
-
-if [[ ! -f $M_EXPORT ]] || [[ ! -f $M_IMPORT ]]; then
-    echo -e "${RED}NO mongo import or export binary files in /opt/kaspersky/kuma/mongodb/bin/${NC}"
 	echo -e $usage
 	exit 1
 fi
@@ -51,9 +51,14 @@ case $1 in
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -export \"My Dashboad\" MyDashboard.json\n OR check is jq installed?${NC}"
 	else
-        cd /opt/kaspersky/kuma/mongodb/bin
-        ./mongoexport  --db=kuma --collection=dashboards --query='{"name": "'$2'"}' | jq -c '._id="UUID" | .widgets[].tenantIDs=["T_ID"] | .tenantIDs=["T_ID"] | .widgets[].search.clusterID="C_ID" | del(.results)'> $3
-		echo -e "${GREEN}Dashboard ${2} exported to file $3!${NC}"
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.find({"name": "'$2'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '._id="UUID" | .widgets[].tenantIDs=["T_ID"] | .tenantIDs=["T_ID"] | .widgets[].search.clusterID="C_ID" | del(.results)'> $3
+		
+		if [[ $? -eq 0 ]]; then
+			echo -e "${GREEN}[OK] Dashboard ${2} exported to file $3!${NC}"
+		else
+			echo -e "${RED}[FAILED] to export dashboard ${2} to file $3!${NC}"
+		fi
+		
 	fi
     ;;
 
@@ -62,12 +67,17 @@ case $1 in
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -import /path/MyDashboard.json${NC}"
         echo -e "${YELLOW}OR Please check file $2, is it exist?${NC}"
 	else
-        cd /opt/kaspersky/kuma/mongodb/bin
         sed -i "s/T_ID/$ACTUAL_TENANT_ID/g" $2
         sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $2
         sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $2
-        ./mongoimport  --db kuma --collection dashboards --file $2
-		echo -e "${GREEN}Dashboard from file ${2} imported!${NC}"
+		
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.insertOne('"$2"');'
+		
+		if [[ $? -eq 0 ]]; then
+			echo -e "${GREEN}[OK] from file ${2} imported!${NC}"
+		else
+			echo -e "${RED}[FAILED] to import dashboard ${2}!${NC}"
+		fi
 	fi
     ;;
 
@@ -76,7 +86,12 @@ case $1 in
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -delete \"My Dashboad\"${NC}"
 	else
         /opt/kaspersky/kuma/mongodb/bin/mongo kuma --eval 'db.dashboards.remove({"name": "'$2'"})'
-		echo -e "${GREEN}Dashboard ${2} deleted!${NC}"
+		
+		if [[ $? -eq 0 ]]; then
+			echo -e "${GREEN}[OK] Dashboard ${2} deleted!${NC}"
+		else
+			echo -e "${RED}[FAILED] to delete dashboard ${2}!${NC}"
+		fi
 	fi
     ;;
 
@@ -84,9 +99,13 @@ case $1 in
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -exportPreset \"My Preset\" MyPreset.json\n OR check is jq installed?${NC}"
 	else
-        cd /opt/kaspersky/kuma/mongodb/bin
-        ./mongoexport  --db=kuma --collection=resources --query='{"kind":"eventPreset","name": "'$2'"}' | jq -c '._id="UUID" | .payload.tenantID="T_ID" | .tenantID="T_ID"'> $3
-		echo -e "${GREEN}Dashboard ${2} exported to file $3!${NC}"
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.find({"kind":"eventPreset","name": "'$2'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '._id="UUID" | .payload.tenantID="T_ID" | .tenantID="T_ID"'> $3
+		
+		if [[ $? -eq 0 ]]; then
+			echo -e "${GREEN}[OK] Preset ${2} exported to file $3!${NC}"
+		else
+			echo -e "${RED}[FAILED] to export preset ${2} to file $3!${NC}"
+		fi
 	fi
     ;;
 
@@ -95,12 +114,21 @@ case $1 in
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -importPreset \"My Preset\" MyPreset.json${NC}"
 		echo -e "${YELLOW}OR Please check file $2, is it exist?${NC}"
 	else
-        cd /opt/kaspersky/kuma/mongodb/bin
-        GENERATED_UUID=$(cat /proc/sys/kernel/random/uuid)
 		sed -i "s/T_ID/$$ACTUAL_TENANT_ID/g" $2
-		sed -i "s/UUID/${GENERATED_UUID}/g" $2
-		./mongoimport  --db kuma --collection resources --file $2
-		echo -e "${GREEN}Dashboard ${2} exported to file $3!${NC}"
+		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $2
+
+		if [[ cat $2 | grep -c '"kind":"eventPreset"' -eq 0 ]]; then
+			echo -e "$[FAILED] It is not preset file!${2}!${NC}"
+			exit 1
+		fi
+		
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.insertOne('"$2"');'
+		
+		if [[ $? -eq 0 ]]; then
+			echo -e "${GREEN}[OK] from file ${2} imported!${NC}"
+		else
+			echo -e "${RED}[FAILED] to import dashboard ${2}!${NC}"
+		fi
 	fi
     ;;
 
