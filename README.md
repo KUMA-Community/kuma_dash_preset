@@ -1,12 +1,10 @@
 # kuma_dash_preset
-Скрипт ипорта/экспорта дашбордов и пресетов для KUMA
+Скрипт импорта/экспорта дашбордов и пресетов для KUMA
 
 
 \* 14.08.2023 - добавлен импорт экспорт Пресетов
 
 Предварительно нужно:
-* поместить mongoexport и mongoimport из  https://box.kaspersky.com/d/53acc02f7a3c4d89a327/  в папку /opt/kaspersky/kuma/mongodb/bin/
-* сделать chmod +x по этим файлам (chmod +x /opt/kaspersky/kuma/mongodb/bin/*)
 * чтобы использовать скрипт (ему надо chmod +x kuma_dash_preset.sh)
 
 При импорте-экспорте нужно указывать полный путем, пример, /root/DNS_EXPORT_CLEAR.json
