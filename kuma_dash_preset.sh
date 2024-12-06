@@ -55,7 +55,7 @@ case $1 in
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -export \"My Dashboad\" MyDashboard.json\n OR check is jq installed?${NC}"
 	else
-		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.find({"name": "'$2'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '._id="UUID" | .widgets[].tenantIDs=["T_ID"] | .tenantIDs=["T_ID"] | .widgets[].search.clusterID="C_ID" | .widgets[].search.eventSpaceConfig.spacesByClusterID={"C_ID":{"spaceids": [""],"allspaces":false}} | .widgets[].search.clusterIDs[]=["C_ID"] | .userID="U_ID" | del(.results)'> $3
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.find({"name": "'"$2"'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '._id = "UUID" | if (.widgets | type) == "array" then .widgets |= map(.tenantIDs = ["T_ID"] | .search.clusterID = "C_ID" | .search.eventSpaceConfig.spacesByClusterID = {"C_ID": {"spaceids": [""], "allspaces": false}} | .search.clusterIDs = ["C_ID"]) else .widgets = [] end | .tenantIDs = ["T_ID"] | .userID = "U_ID" | del(.results)'> $3
 		
 		if [[ $? -eq 0 ]]; then
 			echo -e "${GREEN}[OK] Dashboard ${2} exported to file $3!${NC}"
@@ -114,7 +114,7 @@ case $1 in
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -exportPreset \"My Preset\" MyPreset.json\n OR check is jq installed?${NC}"
 	else
-		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.find({"kind":"eventPreset","name": "'$2'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '._id="UUID" | .payload.tenantID="T_ID" | .tenantID="T_ID" | .payload.userID="U_ID" | .userID="U_ID" | .payload.id="UUID"'> $3
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.find({"kind":"eventPreset","name": "'"$2"'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '._id="UUID" | .payload.tenantID="T_ID" | .tenantID="T_ID" | .payload.userID="U_ID" | .userID="U_ID" | .payload.id="UUID"'> $3
 		
 		if [[ $? -eq 0 ]]; then
 			echo -e "${GREEN}[OK] Preset ${2} exported to file $3!${NC}"
@@ -157,7 +157,7 @@ case $1 in
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -exportSearch \"My Search\" MySearch.json\n OR check is jq installed?${NC}"
 	else
-		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.find({"kind":"search","name": "'$2'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '._id="UUID" | .exportID="UUID" | .payload.id="UUID" | .payload.tenantID="T_ID" | .tenantID="T_ID" | .payload.clusterID="C_ID" | .payload.clusterIDs[]=["C_ID"] | .payload.eventSpaceConfig.spacesByClusterID={"C_ID":{"spaceids": [""],"allspaces":false}} | .userID="U_ID"'> $3
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.find({"kind":"search","name":"'"$2"'"}).forEach(function(doc){print(JSON.stringify(doc));});' | jq -c '.payload |= . // {} | .payload.clusterIDs |= . // [] | ._id="UUID" | .exportID="UUID" | .payload.id="UUID" | .payload.tenantID="T_ID" | .tenantID="T_ID" | .payload.clusterID="C_ID" | .payload.clusterIDs=["C_ID"] | .payload.eventSpaceConfig.spacesByClusterID={"C_ID":{"spaceids": [""],"allspaces":false}} | .userID="U_ID"'> $3
 		
 		if [[ $? -eq 0 ]]; then
 			echo -e "${GREEN}[OK] Search ${2} exported to file $3!${NC}"
