@@ -72,17 +72,21 @@ case $1 in
         echo -e "${YELLOW}OR Please check file $2, is it exist?${NC}"
 		echo -e "$[FAILED] It is not dashboard file!${2}!${NC}"
 	else
-        sed -i "s/T_ID/$ACTUAL_TENANT_ID/g" $2
-        sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $2
-		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $2
-        sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $2
-
-		#if [[ cat $2 | grep -c '"widgets"' -eq 0 ]]; then
-		#	echo -e "$[FAILED] It is not dashboard file!${2}!${NC}"
-		#	exit 1
-		#fi
+		tempfile=$(mktemp /tmp/tempfile.XXXXXX)
+		if [[ $? -ne 0 ]]; then
+			echo "Failed to create temporary file."
+			exit 1
+		fi
+		trap 'rm -f "$tempfile"; exit' INT TERM EXIT
+		cat $2 > $tempfile
 		
-		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.insertOne('"$2"');'
+        sed -i "s/T_ID/$ACTUAL_TENANT_ID/g" $tempfile
+        sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $tempfile
+		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $tempfile
+        sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
+
+		FILE_CONTENT=$(cat $tempfile)
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.insertOne('"$FILE_CONTENT"');'
 		
 		if [[ $? -eq 0 ]]; then
 			echo -e "${GREEN}[OK] from file ${2} imported!${NC}"
@@ -126,16 +130,20 @@ case $1 in
 		echo -e "${YELLOW}OR Please check file $2, is it exist?${NC}"
 		echo -e "$[FAILED] It is not preset file!${2}!${NC}"
 	else
-		sed -i "s/T_ID/$$ACTUAL_TENANT_ID/g" $2
-		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $2
-		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $2
-
-		#if [[ cat $2 | grep -c '"kind":"eventPreset"' -eq 0 ]]; then
-		#	echo -e "$[FAILED] It is not preset file!${2}!${NC}"
-		#	exit 1
-		#fi
+		tempfile=$(mktemp /tmp/tempfile.XXXXXX)
+		if [[ $? -ne 0 ]]; then
+			echo "Failed to create temporary file."
+			exit 1
+		fi
+		trap 'rm -f "$tempfile"; exit' INT TERM EXIT
+		cat $2 > $tempfile
 		
-		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.insertOne('"$2"');'
+		sed -i "s/T_ID/$$ACTUAL_TENANT_ID/g" $tempfile
+		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $tempfile
+		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
+
+		FILE_CONTENT=$(cat $tempfile)
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.insertOne('"$FILE_CONTENT"');'
 		
 		if [[ $? -eq 0 ]]; then
 			echo -e "${GREEN}[OK] Preset from file ${2} imported!${NC}"
@@ -164,17 +172,21 @@ case $1 in
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -importSearch \"My Search\" MySearch.json${NC}"
 		echo -e "${YELLOW}OR Please check file $2, is it exist?${NC}"
 	else
-		sed -i "s/T_ID/$$ACTUAL_TENANT_ID/g" $2
-		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $2
-		sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $2
-		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $2
-
-		#if [[ cat $2 | grep -c '"kind":"search"' -eq 0 ]]; then
-		#	echo -e "$[FAILED] It is not Search file!${2}!${NC}"
-		#	exit 1
-		#fi
+		tempfile=$(mktemp /tmp/tempfile.XXXXXX)
+		if [[ $? -ne 0 ]]; then
+			echo "Failed to create temporary file."
+			exit 1
+		fi
+		trap 'rm -f "$tempfile"; exit' INT TERM EXIT
+		cat $2 > $tempfile
 		
-		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.insertOne('"$2"');'
+		sed -i "s/T_ID/$$ACTUAL_TENANT_ID/g" $tempfile
+		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $tempfile
+		sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $tempfile
+		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
+
+		FILE_CONTENT=$(cat $tempfile)
+		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.insertOne('"$FILE_CONTENT"');'
 		
 		if [[ $? -eq 0 ]]; then
 			echo -e "${GREEN}[OK] Search from file ${2} imported!${NC}"
