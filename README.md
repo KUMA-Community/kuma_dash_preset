@@ -29,8 +29,10 @@
 
 `-importSearch <File Export Name.json` -- импорт пресета в KUMA
 
-Пример импорта:
+**Пример импорта:**
+
 `./kuma_dash_preset.sh -import /root/CheckPointCEF_EXPORT_CLEAR(kuma2-0).json`
 
 Для массовой загрузки можно воспользоваться циклом:
+
 `for i in $(ls *json); do ./kuma_dash_preset.sh -importSearch $i; done`
