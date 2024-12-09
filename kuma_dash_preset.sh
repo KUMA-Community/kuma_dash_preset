@@ -49,8 +49,8 @@ fi
 case $1 in
 	"-h")
 	echo -e $usage
-	;;
-
+    ;;
+    
     "-exportDash")
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -export \"My Dashboad\" MyDashboard.json\n OR check is jq installed?${NC}"
@@ -82,7 +82,7 @@ case $1 in
 		
         sed -i "s/T_ID/$ACTUAL_TENANT_ID/g" $tempfile
         sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $tempfile
-		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $tempfile
+	sed -i "s/U_ID/$ACTUAL_ADMIN_ID/g" $tempfile
         sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
 
 		FILE_CONTENT=$(cat $tempfile)
@@ -95,7 +95,7 @@ case $1 in
 		fi
 	fi
     ;;
-
+    
     "-deleteDash")
 	if [[ ! $# -eq 2 ]] || [[ $2 == ""  ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -delete \"My Dashboad\"${NC}"
@@ -109,8 +109,8 @@ case $1 in
 		fi
 	fi
     ;;
-
-	"-exportPreset")
+    
+    "-exportPreset")
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -exportPreset \"My Preset\" MyPreset.json\n OR check is jq installed?${NC}"
 	else
@@ -123,8 +123,8 @@ case $1 in
 		fi
 	fi
     ;;
-
-	"-importPreset")
+    
+    "-importPreset")
 	if [[ ! $# -eq 2 ]] || [[ $2 == ""  ]] || [[ ! -f $2 ]] || [[ $(grep -c '"kind":"eventPreset"' "$2") -eq 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -importPreset \"My Preset\" MyPreset.json${NC}"
 		echo -e "${YELLOW}OR Please check file $2, is it exist?${NC}"
@@ -138,8 +138,8 @@ case $1 in
 		trap 'rm -f "$tempfile"; exit' INT TERM EXIT
 		cat $2 > $tempfile
 		
-		sed -i "s/T_ID/$$ACTUAL_TENANT_ID/g" $tempfile
-		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $tempfile
+		sed -i "s/T_ID/$ACTUAL_TENANT_ID/g" $tempfile
+		sed -i "s/U_ID/$ACTUAL_ADMIN_ID/g" $tempfile
 		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
 
 		FILE_CONTENT=$(cat $tempfile)
@@ -152,8 +152,8 @@ case $1 in
 		fi
 	fi
     ;;
-
-	"-exportSearch")
+    
+    "-exportSearch")
 	if [[ ! $# -eq 3 ]] || [[ $2 == ""  ]] || [[ $3 == ""  ]] || [[ $IS_EXPORT == 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -exportSearch \"My Search\" MySearch.json\n OR check is jq installed?${NC}"
 	else
@@ -166,8 +166,8 @@ case $1 in
 		fi
 	fi
     ;;
-
-	"-importSearch")
+    
+    "-importSearch")
 	if [[ ! $# -eq 2 ]] || [[ $2 == ""  ]] || [[ ! -f $2 ]] || [[ $(grep -c '"kind":"search"' "$2") -eq 0 ]]; then
 		echo -e "${YELLOW}Please enter valid arguments!\nExample: -importSearch \"My Search\" MySearch.json${NC}"
 		echo -e "${YELLOW}OR Please check file $2, is it exist?${NC}"
@@ -180,8 +180,8 @@ case $1 in
 		trap 'rm -f "$tempfile"; exit' INT TERM EXIT
 		cat $2 > $tempfile
 		
-		sed -i "s/T_ID/$$ACTUAL_TENANT_ID/g" $tempfile
-		sed -i "s/U_ID/$$ACTUAL_ADMIN_ID/g" $tempfile
+		sed -i "s/T_ID/$ACTUAL_TENANT_ID/g" $tempfile
+		sed -i "s/U_ID/$ACTUAL_ADMIN_ID/g" $tempfile
 		sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $tempfile
 		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
 
