@@ -7,17 +7,6 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 
 USER_LOGIN="admin"
-KUMA_VER=$(/opt/kaspersky/kuma/kuma version | cut -d "." -f1-2)
-ACTUAL_TENANT_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.find({"main":true},{"_id": 1}).map(function(doc){return doc._id;});' | sed "s/'/\"/g" | cut -d '"' -f2)
-ACTUAL_ADMIN_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.standalone_users.find({"login":"'$USER_LOGIN'"},{"_id": 1}).map(function(doc){return doc._id;});' | sed "s/'/\"/g" | cut -d '"' -f2)
-
-if [[ $(bc <<< "$KUMA_VER >= 3.2") -eq 1 ]]; then 
-	ACTUAL_CLUSTER_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.services.find({"kind": "storage", "status": "green", "tenantID": "'$ACTUAL_TENANT_ID'"})[0].resourceID')
-else
-	ACTUAL_CLUSTER_ID=$(sqlite3 /opt/kaspersky/kuma/core/00000000-0000-0000-0000-000000000000/raft/sm/db "select resource_id from services where kind='storage' and status='green' and tenant_id='$mainID';")
-
-	mainID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.findOne({"main":true})._id');/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.updateMany({"name": {$in:["[OOTB] KWTS","[OOTB] KSMG","[OOTB] KSC","[OOTB] KATA & EDR","Network Overview"]}}, {$set: {"widgets.$[x].search.clusterID": "'"$ACTUAL_CLUSTER_ID"'"}},{arrayFilters: [{"x.search.clusterID": {$in:["phantomID","","6c964dab-e303-4a2c-bb31-d84866a20599"]}, "x.specialKind": ""}]});'
-fi
 
 usage="\n$(basename "$0") [-h] [-exportDash] [-importDash] [-deleteDash] [-exportPreset] [-importPreset] [-exportSearch] [-importSearch] <ARGUMENTS> -- program for executing script\n
 \n
@@ -45,6 +34,17 @@ if ! command -v jq &> /dev/null; then
 		IS_EXPORT=0
 fi
 
+KUMA_VER=$(/opt/kaspersky/kuma/kuma version | cut -d "." -f1-2)
+ACTUAL_TENANT_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.find({"main":true},{"_id": 1}).map(function(doc){return doc._id;});' | sed "s/'/\"/g" | cut -d '"' -f2)
+ACTUAL_ADMIN_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.standalone_users.find({"login":"'$USER_LOGIN'"},{"_id": 1}).map(function(doc){return doc._id;});' | sed "s/'/\"/g" | cut -d '"' -f2)
+
+if [[ $(bc <<< "$KUMA_VER >= 3.2") -eq 1 ]]; then 
+	ACTUAL_CLUSTER_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.services.find({"kind": "storage", "status": "green", "tenantID": "'$ACTUAL_TENANT_ID'"})[0].resourceID')
+else
+	ACTUAL_CLUSTER_ID=$(sqlite3 /opt/kaspersky/kuma/core/00000000-0000-0000-0000-000000000000/raft/sm/db "select resource_id from services where kind='storage' and status='green' and tenant_id='$mainID';")
+
+	mainID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.findOne({"main":true})._id');/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.updateMany({"name": {$in:["[OOTB] KWTS","[OOTB] KSMG","[OOTB] KSC","[OOTB] KATA & EDR","Network Overview"]}}, {$set: {"widgets.$[x].search.clusterID": "'"$ACTUAL_CLUSTER_ID"'"}},{arrayFilters: [{"x.search.clusterID": {$in:["phantomID","","6c964dab-e303-4a2c-bb31-d84866a20599"]}, "x.specialKind": ""}]});'
+fi
 
 case $1 in
 	"-h")
