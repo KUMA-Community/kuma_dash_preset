@@ -84,6 +84,7 @@ case $1 in
 		sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $tempfile
 		sed -i "s/U_ID/$ACTUAL_ADMIN_ID/g" $tempfile
 		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
+  		sed -i 's/{"\$numberLong":"\([0-9]\+\)"}/\1/g' $tempfile  		
 
 		FILE_CONTENT=$(cat $tempfile)
 		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.dashboards.insertOne('"$FILE_CONTENT"');'
@@ -142,6 +143,7 @@ case $1 in
 		sed -i "s/C_ID/$ACTUAL_CLUSTER_ID/g" $tempfile
 		sed -i "s/U_ID/$ACTUAL_ADMIN_ID/g" $tempfile
 		sed -i "s/UUID/$(cat /proc/sys/kernel/random/uuid)/g" $tempfile
+  		sed -i 's/{"\$numberLong":"\([0-9]\+\)"}/\1/g' $tempfile
 
 		FILE_CONTENT=$(cat $tempfile)
 		/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.resources.insertOne('"$FILE_CONTENT"');'
