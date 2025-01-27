@@ -8,6 +8,7 @@
 Предварительно нужно:
 - установленный пакет `jq`, для установки на ubuntu: `sudo apt-get update && sudo apt-get install jq`
 - права запуска для скрипта, `chmod +x kuma_dash_preset.sh`
+- ! имя файла должно быть без пробелов !
 
 При импорте-экспорте нужно указывать полный путем, пример, /root/DNS_EXPORT_CLEAR.json
 
