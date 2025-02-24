@@ -34,6 +34,12 @@ if ! command -v jq &> /dev/null; then
 		IS_EXPORT=0
 fi
 
+if ! command -v sqlite3 &> /dev/null; then
+		echo -e "${RED}NO sqlite3 command, please install (example): sudo apt-get install sqlite3${NC}"
+		echo -e "${YELLOW}NO import functioanlity!${NC}"
+		exit 1
+fi
+
 KUMA_VER=$(/opt/kaspersky/kuma/kuma version | cut -d "." -f1-2)
 ACTUAL_TENANT_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.tenants.find({"main":true},{"_id": 1}).map(function(doc){return doc._id;});' | sed "s/'/\"/g" | cut -d '"' -f2)
 ACTUAL_ADMIN_ID=$(/opt/kaspersky/kuma/mongodb/bin/mongo localhost/kuma --quiet --eval 'db.standalone_users.find({"login":"'$USER_LOGIN'"},{"_id": 1}).map(function(doc){return doc._id;});' | sed "s/'/\"/g" | cut -d '"' -f2)
